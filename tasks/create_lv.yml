@@ -1,0 +1,30 @@
+---
+- name: Display Volume Group
+  debug:
+    var: vg
+    verbosity: 2
+
+- name: Creating new LVM logical volume(s)
+  become: true
+  lvol:
+    vg: "{{ vg.vgname }}"
+    lv: "{{ lv.lvname }}"
+    size: "{{ lv.size }}"
+    shrink: false
+    opts: "{{ lv.opts | default('') }}"
+    state: present
+  register: lvchanged
+  when:
+    - vg.create is defined
+    - vg.create|bool
+    - lv is defined
+    - lv != 'None'
+    - lv.create is defined
+    - lv.create|bool
+
+#- name: Debug changed attribute
+#  debug:
+#    var: lvchanged
+
+- name: Configuring FS
+  include_tasks: create_fs.yml
