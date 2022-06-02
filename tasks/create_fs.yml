@@ -3,7 +3,7 @@
 - name: Check already converted
   # at least xfs is executed twice if the partition has changed in the meantime
   # then it tries to recreate the fs on the mounted fs which indeed fails...
-  shell: "xfs_info {{ lv.mntp }} | grep -c 'ftype=1'"
+  ansible.builtin.shell: "xfs_info {{ lv.mntp }} | grep -c 'ftype=1'"
   become: true
   register: mountedxfs
   ignore_errors: true
@@ -16,7 +16,7 @@
     - lv.create|bool
 
 - name: Unmounting filesystem(s)
-  mount:
+  ansible.posix.mount:
     path: "{{ lv.mntp }}"
     src: "/dev/{{ vg.vgname }}/{{ lv.lvname }}"
     fstype: "{{ lv.filesystem | default(omit) }}"
@@ -30,14 +30,14 @@
     - lv.filesystem != "swap"
 
 - name: Disable SWAP when resizing it
-  command: swapoff -a
+  ansible.builtin.command: swapoff -a
   when:
     - lv.create|bool
     - lv.filesystem is defined
     - lv.filesystem == "swap"
 
 - name: Creating new filesystem on new LVM logical volume(s)
-  filesystem:
+  community.general.filesystem:
     fstype: "{{ lv.filesystem }}"
     dev: "/dev/{{ vg.vgname }}/{{ lv.lvname }}"
     resizefs: 'yes'
@@ -55,21 +55,21 @@
   failed_when: false
 
 - name: mkswap with new space
-  command: "mkswap /dev/{{ vg_name }}/swap"
+  ansible.builtin.command: "mkswap /dev/{{ vg_name }}/swap"
   when:
     - lv.create|bool
     - lv.filesystem is defined
     - lv.filesystem == "swap"
 
 - name: Enable SWAP when resizing it
-  command: swapon -a
+  ansible.builtin.command: swapon -a
   when:
     - lv.create|bool
     - lv.filesystem is defined
     - lv.filesystem == "swap"
 
 - name: Creating new xfs filesystem on new LVM logical volume(s)
-  filesystem:
+  community.general.filesystem:
     fstype: "{{ lv.filesystem }}"
     dev: "/dev/{{ vg.vgname }}/{{ lv.lvname }}"
   become: true
@@ -85,7 +85,7 @@
     - lv.filesystem == 'xfs'
 
 - name: Mounting new filesystem(s)
-  mount:
+  ansible.posix.mount:
     path: "{{ lv.mntp }}"
     src: "/dev/{{ vg.vgname }}/{{ lv.lvname }}"
     fstype: "{{ lv.filesystem }}"
@@ -104,7 +104,7 @@
     - lv.filesystem != "swap"
 
 - name: Resizing xfs filesystem on new LVM logical volume(s)
-  command: "xfs_growfs {{ lv.mntp }}"
+  ansible.builtin.command: "xfs_growfs {{ lv.mntp }}"
   become: true
   when:
     - vg.create is defined

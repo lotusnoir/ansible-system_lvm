@@ -1,13 +1,13 @@
 ---
 - name: REDHAT | Install requirements
-  dnf:
+  ansible.builtin.dnf:
     name:
       - lvm2
       - sg3_utils
     state: present
 
 - name: centos | install xfs tools
-  package:
+  ansible.builtin.package:
     name: "xfsprogs"
     state: "present"
   become: true
@@ -23,7 +23,7 @@
     - lv.1.create|bool
 
 #- name: centos | debug lvg
-#  debug:
+#  ansible.builtin.debug:
 #    var: lv
 #    verbosity: 3
 #  loop: "{{ lookup('subelements', lvm_groups, 'lvnames', {'skip_missing': True}, wantlist=True) }}"

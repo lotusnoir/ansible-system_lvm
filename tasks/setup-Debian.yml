@@ -1,7 +1,7 @@
 ---
 - name: DEBIAN | Install requirements
   become: true
-  package:
+  ansible.builtin.package:
     name:
       - lvm2
       - scsitools
@@ -10,7 +10,7 @@
     state: present
 
 - name: DEBIAN | install xfs tools
-  package:
+  ansible.builtin.package:
     name: xfsprogs
     state: present
   become: true

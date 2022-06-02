@@ -1,12 +1,12 @@
 ---
 - name: Display Volume Group
-  debug:
+  ansible.builtin.debug:
     var: vg
     verbosity: 2
 
 - name: Creating new LVM logical volume(s)
   become: true
-  lvol:
+  community.general.lvol:
     vg: "{{ vg.vgname }}"
     lv: "{{ lv.lvname }}"
     size: "{{ lv.size }}"
@@ -23,7 +23,7 @@
     - lv.create|bool
 
 #- name: Debug changed attribute
-#  debug:
+#  ansible.builtin.debug:
 #    var: lvchanged
 
 - name: Configuring FS
