@@ -1,6 +1,6 @@
 ---
 - name: REDHAT | Install requirements
-  ansible.builtin.dnf:
+  ansible.builtin.package:
     name:
       - lvm2
       - sg3_utils
