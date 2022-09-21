@@ -1,4 +1,5 @@
 ---
+lvm_parted_disk: ["sdb"]
 lvm_rescanning_script: "/sbin/rescan-scsi-bus"
 lvm_groups: []
 # - vgname: ubuntu-vg

@@ -1,4 +1,16 @@
 ---
+- name: Ensure rescan exist
+  ansible.builtin.stat:
+    path: "/sys/class/block/{{ lvm_free_space_disk[:-1] | split('/') | last }}/device/rescan"
+  changed_when: false
+  register: scsi_disk
+
+- name: Checking for scsi devices
+  ansible.builtin.shell: "echo '1' > /sys/class/block/{{ lvm_free_space_disk[:-1] | split('/') | last }}/device/rescan"
+  become: true
+  changed_when: false
+  when: scsi_disk.stat.exists
+
 - name: "Add task for Debian"
   ansible.builtin.include_tasks: setup-Debian.yml
   when: ansible_os_family == "Debian"
@@ -6,12 +18,6 @@
 - name: "Add tasks for Redhat"
   ansible.builtin.include_tasks: setup-Redhat.yml
   when: ansible_os_family == "RedHat" or ansible_os_family == "Rocky"
-
-- name: Checking for scsi devices
-  ansible.builtin.command: sg_scan
-  become: true
-  register: scsi_devices
-  changed_when: false
 
 - name: Rescanning for new disks added
   ansible.builtin.command: "{{ lvm_rescanning_script }}"
@@ -47,26 +53,17 @@
       ansible.builtin.debug:
         var: sdb_info
 
-    - name: Remove partition number 1
+    - name: Extend partition to fill all available space
       community.general.parted:
         device: "{{ lvm_free_space_disk[:-1] }}"
         number: "{{ lvm_free_space_disk[-1] }}"
-        state: absent
-      when:
-        - lvm_groups is defined
-        - manage_lvm|bool
-        - (parted_result is defined) and (parted_result.stdout_lines|length > 0) and (parted_result.stdout_lines[0] != "0.00GB")
-
-    - name: Create lvm partition with empty space
-      community.general.parted:
-        device: "{{ lvm_free_space_disk[:-1] }}"
-        number: "{{ lvm_free_space_disk[-1] }}"
-        flags: [lvm]
+        part_end: "100%"
+        resize: true
         state: present
       when:
         - lvm_groups is defined
         - manage_lvm|bool
-        - (sdb_info.rc is defined) and (sdb_info.rc == 0) or (sdb_info.disk is defined)
+        - (parted_result is defined) and (parted_result.stdout_lines|length > 0) and (parted_result.stdout_lines[0] != "0.00GB")
 
     - name: Resize of physical volumes
       ansible.builtin.command: "pvresize {{ lvm_free_space_disk }}"
