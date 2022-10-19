@@ -33,6 +33,10 @@
 - name: "Resize disk if exist"
   when: extra_disk.stat.exists
   block:
+    - name: Add label
+      ansible.builtin.command: parted {{ lvm_free_space_disk[:-1] }} --script -- mklabel msdos
+      changed_when: false
+
     - name: Check if empty space analocated
       ansible.builtin.shell: parted {{ lvm_free_space_disk[:-1] }} unit GB print free | grep 'Free Space' | tail -n1 | awk '{print $3}'
       register: parted_result
@@ -56,7 +60,7 @@
     - name: Extend partition to fill all available space
       community.general.parted:
         device: "{{ lvm_free_space_disk[:-1] }}"
-        number: "{{ lvm_free_space_disk[-1] }}"
+        number: "2"
         part_end: "100%"
         resize: true
         state: present
@@ -65,10 +69,10 @@
         - manage_lvm|bool
         - (parted_result is defined) and (parted_result.stdout_lines|length > 0) and (parted_result.stdout_lines[0] != "0.00GB")
 
-    - name: Resize of physical volumes
-      ansible.builtin.command: "pvresize {{ lvm_free_space_disk }}"
-      when:
-        - (parted_result is defined) and (parted_result.stdout_lines|length > 0) and (parted_result.stdout_lines[0] != "0.00GB")
+    #- name: Resize of physical volumes
+    #  ansible.builtin.command: "pvresize {{ lvm_free_space_disk }}"
+    #  when:
+    #    - (parted_result is defined) and (parted_result.stdout_lines|length > 0) and (parted_result.stdout_lines[0] != "0.00GB")
 
     - name: Manage physical volume group creation
       ansible.builtin.include_tasks: create_vg.yml
