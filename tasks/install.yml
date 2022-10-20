@@ -1,85 +1,37 @@
 ---
+# tasks file for ansible-manage-lvm
+- name: Set rescan_scsi_command for old debian version
+  ansible.builtin.set_fact:
+    rescan_scsi_command: "/sbin/rescan-scsi-bus"
+  when:
+    - ansible_distribution | replace(' ','') | lower == 'debian'
+    - ansible_distribution_release not in ('bookworm', 'sid')
+    - ansible_distribution_major_version is version(10, '<=')
+
 - name: Ensure rescan exist
   ansible.builtin.stat:
-    path: "/sys/class/block/{{ lvm_free_space_disk[:-1] | split('/') | last }}/device"
+    path: "/sys/class/block/sdb/device"
   changed_when: false
   register: scsi_disk
 
 - name: Checking for scsi devices
-  ansible.builtin.shell: "echo '1' > /sys/class/block/{{ lvm_free_space_disk[:-1] | split('/') | last }}/device/rescan"
+  ansible.builtin.shell: "echo '1' > /sys/class/block/sdb/device/rescan"
   become: true
   changed_when: false
   when: scsi_disk.stat.exists
 
-- name: "Add task for Debian"
-  ansible.builtin.include_tasks: setup-Debian.yml
-  when: ansible_os_family == "Debian"
-
-- name: "Add tasks for Redhat"
-  ansible.builtin.include_tasks: setup-Redhat.yml
-  when: ansible_os_family == "RedHat" or ansible_os_family == "Rocky"
-
-- name: Rescanning for new disks added
-  ansible.builtin.command: "{{ lvm_rescanning_script }}"
-  become: true
+- name: Resize of physical volumes
+  ansible.builtin.command: "pvresize /dev/sdb"
   changed_when: false
+  failed_when: false
 
-- name: "Check if extra disk exist"
-  ansible.builtin.stat:
-    path: '{{ lvm_free_space_disk[:-1] }}'
-  changed_when: false
-  register: extra_disk
+- include_tasks: debian.yml
+  when: ansible_facts.os_family == "Debian"
 
-- name: "Resize disk if exist"
-  when: extra_disk.stat.exists
-  block:
-    - name: Add label
-      ansible.builtin.command: parted {{ lvm_free_space_disk[:-1] }} --script -- mklabel msdos
-      changed_when: false
+- include_tasks: centos.yml
+  when: ansible_facts.os_family == "RedHat"
 
-    - name: Check if empty space analocated
-      ansible.builtin.shell: parted {{ lvm_free_space_disk[:-1] }} unit GB print free | grep 'Free Space' | tail -n1 | awk '{print $3}'
-      register: parted_result
-      changed_when: false
-
-    - name: Show parted result
-      ansible.builtin.debug:
-        var: parted_result.stdout_lines
-
-    - name: Get parted info
-      community.general.parted:
-        device: "{{ lvm_free_space_disk[:-1] }}"
-        unit: MiB
-      ignore_errors: true
-      register: sdb_info
-
-    - name: Show parted infos
-      ansible.builtin.debug:
-        var: sdb_info
-
-    - name: Extend partition to fill all available space
-      community.general.parted:
-        device: "{{ lvm_free_space_disk[:-1] }}"
-        number: "2"
-        part_end: "100%"
-        resize: true
-        state: present
-      when:
-        - lvm_groups is defined
-        - manage_lvm|bool
-        - (parted_result is defined) and (parted_result.stdout_lines|length > 0) and (parted_result.stdout_lines[0] != "0.00GB")
-
-    #- name: Resize of physical volumes
-    #  ansible.builtin.command: "pvresize {{ lvm_free_space_disk }}"
-    #  when:
-    #    - (parted_result is defined) and (parted_result.stdout_lines|length > 0) and (parted_result.stdout_lines[0] != "0.00GB")
-
-    - name: Manage physical volume group creation
-      ansible.builtin.include_tasks: create_vg.yml
-      loop: "{{ lvm_groups }}"
-      loop_control:
-        loop_var: vg
-      when:
-        - lvm_groups is defined
-        - manage_lvm|bool
-        - (sdb_info.rc is defined) and (sdb_info.rc == 0) or (sdb_info.disk is defined)
+- include_tasks: manage_lvm.yml
+  when:
+    - lvm_groups is defined
+    - manage_lvm|bool

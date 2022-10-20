@@ -1,11 +1,10 @@
 ---
-- name: Display Volume Group
+- name: create_lv | Display Volume Group
   ansible.builtin.debug:
     var: vg
     verbosity: 2
 
-- name: Creating new LVM logical volume(s)
-  become: true
+- name: create_lv | creating new LVM logical volume(s)
   community.general.lvol:
     vg: "{{ vg.vgname }}"
     lv: "{{ lv.lvname }}"
@@ -13,6 +12,7 @@
     shrink: false
     opts: "{{ lv.opts | default('') }}"
     state: present
+  become: true
   register: lvchanged
   when:
     - vg.create is defined
@@ -22,9 +22,9 @@
     - lv.create is defined
     - lv.create|bool
 
-#- name: Debug changed attribute
-#  ansible.builtin.debug:
-#    var: lvchanged
+- name: create_lv | debug changed attribute
+  ansible.builtin.debug:
+    var: lvchanged
 
-- name: Configuring FS
+- name: create_lv | configuring FS
   include_tasks: create_fs.yml
