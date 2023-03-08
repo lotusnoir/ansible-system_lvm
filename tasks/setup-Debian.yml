@@ -8,6 +8,10 @@
       - parted
     update_cache: true
     state: present
+  register: result
+  until: result is not failed
+  retries: 10
+  delay: 10
 
 - name: DEBIAN | install xfs tools
   ansible.builtin.package:
