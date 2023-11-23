@@ -4,6 +4,10 @@
     update_cache: true
     cache_valid_time: 3600
   become: true
+  register: pkg_result
+  retries: 12
+  delay: 10
+  until: pkg_result is success
 
 - name: debian | installing pre-reqs
   ansible.builtin.apt:
@@ -12,12 +16,20 @@
       - scsitools
     state: present
   become: true
+  register: pkg_result
+  retries: 12
+  delay: 10
+  until: pkg_result is success
 
 - name: debian | install xfs tools
   ansible.builtin.apt:
     name: xfsprogs
     state: present
   become: true
+  register: pkg_result
+  retries: 12
+  delay: 10
+  until: pkg_result is success
   loop: "{{ lvm_groups|subelements('lvnames') }}"
   when:
     - item.1 is defined

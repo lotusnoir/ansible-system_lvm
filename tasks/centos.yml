@@ -6,6 +6,10 @@
       - sg3_utils
     state: present
   become: true
+  register: pkg_result
+  retries: 12
+  delay: 10
+  until: pkg_result is success
 
 - include_tasks: amazon.yml
   when: ansible_system_vendor == 'Amazon EC2'
@@ -23,6 +27,10 @@
     name: "xfsprogs"
     state: "present"
   become: true
+  register: pkg_result
+  retries: 12
+  delay: 10
+  until: pkg_result is success
   loop: "{{ lookup('subelements', lvm_groups, 'lvnames', {'skip_missing': True}, wantlist=True) }}"
   loop_control:
     loop_var: lv
@@ -47,6 +55,10 @@
       ansible.builtin.package:
         name: sg3_utils
         state: present
+      register: pkg_result
+      retries: 12
+      delay: 10
+      until: pkg_result is success
       become: true
 
     - name: centos | checking for scsi devices
