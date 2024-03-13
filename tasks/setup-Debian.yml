@@ -22,7 +22,7 @@
   retries: 12
   delay: 10
   until: pkg_result is success
-  loop: "{{ lvm_groups|subelements('lvnames') }}"
+  loop: "{{ lvm_groups | subelements('lvnames') }}"
   when:
     - item.1 is defined
     - item.1 != 'None'

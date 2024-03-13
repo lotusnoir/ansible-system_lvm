@@ -10,7 +10,7 @@
   delay: 10
   until: pkg_result is success
 
-- name: centos | install xfs tools
+- name: Centos | install xfs tools
   ansible.builtin.package:
     name: "xfsprogs"
     state: "present"

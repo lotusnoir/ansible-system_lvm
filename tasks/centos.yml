@@ -1,5 +1,5 @@
 ---
-- name: centos | installing lvm2 and sg3_utils
+- name: Centos | installing lvm2 and sg3_utils
   ansible.builtin.package:
     name:
       - lvm2
@@ -11,10 +11,11 @@
   delay: 10
   until: pkg_result is success
 
-- include_tasks: amazon.yml
+- name: Amazon tasks
+  ansible.builtin.include_tasks: amazon.yml
   when: ansible_system_vendor == 'Amazon EC2'
 
-- name: centos | debug lvg
+- name: Centos | debug lvg
   ansible.builtin.debug:
     var: lv
     verbosity: 3
@@ -22,7 +23,7 @@
   loop_control:
     loop_var: lv
 
-- name: centos | install xfs tools
+- name: Centos | install xfs tools
   ansible.builtin.package:
     name: "xfsprogs"
     state: "present"
@@ -42,16 +43,17 @@
     - lv.1.create is defined
     - lv.1.create|bool
 
-- name: centos | check for scsi adapters
+- name: Centos | check for scsi adapters
   ansible.builtin.find:
     paths: "/sys/class/scsi_host"
     file_type: any
   become: true
   register: scsi_adapters
 
-- name: centos | scsi adapter matched
+- name: Centos | scsi adapter matched
+  when: scsi_adapters.matched > 0
   block:
-    - name: centos | installing sg3_utils
+    - name: Centos | installing sg3_utils
       ansible.builtin.package:
         name: sg3_utils
         state: present
@@ -61,22 +63,20 @@
       until: pkg_result is success
       become: true
 
-    - name: centos | checking for scsi devices
+    - name: Centos | checking for scsi devices
       ansible.builtin.command: sg_scan
       become: true
       register: scsi_devices
       changed_when: false
 
-    - name: centos | rescanning for new disks
+    - name: Centos | rescanning for new disks
       ansible.builtin.command: "{{ rescan_scsi_command }}"
       become: true
       changed_when: false
       when: scsi_devices.stdout|length > 0
 
-    - name: centos | rescanning for resized disks
+    - name: Centos | rescanning for resized disks
       ansible.builtin.command: "{{ rescan_scsi_command }} -s"
       become: true
       changed_when: false
       when: scsi_devices.stdout|length > 0
-
-  when: scsi_adapters.matched > 0

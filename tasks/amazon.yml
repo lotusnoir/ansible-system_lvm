@@ -1,6 +1,5 @@
 ---
-
-- name: amazon | check for nvme devices
+- name: Amazon | check for nvme devices
   ansible.builtin.shell: |
     set -o pipefail
     cat /proc/partitions | awk '{print $4}' | grep -q nvme. ; echo $?
@@ -9,7 +8,7 @@
   register: blkdev_nvme
   changed_when: false
 
-- name: amazon | check for amazon ebs devices
+- name: Amazon | check for amazon ebs devices
   ansible.builtin.shell: |
     set -o pipefail
     lsblk -O -J | grep -qi "amazon elastic block store" ; echo $?
@@ -18,11 +17,11 @@
   args:
     executable: /bin/bash
 
-- name: amazon | set flag for nvme subsystem
+- name: Amazon | set flag for nvme subsystem
   ansible.builtin.set_fact:
     device_is_nvme: "{{ true if (blkdev_nvme.stdout == '0') else false }}"
 
-- name: amazon | set flag for aws ebs devices
+- name: Amazon | set flag for aws ebs devices
   ansible.builtin.set_fact:
     device_is_awsebs: "{{ true if (blkdev_awsebs.stdout == '0') else false }}"
 
@@ -30,14 +29,14 @@
   when: device_is_nvme and device_is_awsebs|bool
   become: true
   block:
-    - name: amazon | download nvme mapping binary helper
+    - name: Amazon | download nvme mapping binary helper
       ansible.builtin.get_url:
         url: "{{ ebsnvme_binary_helper_url }}"
         dest: "{{ ebsnvme_binary_helper_tmp }}/"
         mode: 644
       changed_when: false
 
-    - name: amazon | extract binary helper
+    - name: Amazon | extract binary helper
       ansible.builtin.unarchive:
         src: "{{ ebsnvme_binary_helper_tmp }}/{{ ebsnvme_binary_helper_file }}"
         dest: "{{ ebsnvme_binary_helper_tmp }}/"
@@ -45,27 +44,23 @@
         mode: 0755
       changed_when: false
 
-    - name: amazon | copy binary helper
+    - name: Amazon | copy binary helper
       ansible.builtin.copy:
         src: "{{ ebsnvme_binary_helper_tmp }}/go-ebsnvme"
         dest: "{{ ebsnvme_binary_helper_path }}"
         mode: a+x
         remote_src: true
 
-    - name: amazon | template script helper
+    - name: Amazon | template script helper
       ansible.builtin.template:
         src: 'ebsnvme-id.j2'
         dest: "{{ ebsnvme_scrip_helper_path }}"
         mode: a+x
 
-    - name: amazon | template udev rule
+    - name: Amazon | template udev rule
       ansible.builtin.template:
         src: '70-ec2-nvme-devices.rules.j2'
         dest: '/etc/udev/rules.d/70-ec2-nvme-devices.rules'
         mode: 0755
       register: udev_rule
-
-    - name: amazon | reload and trigger udev rules
-      ansible.builtin.shell:
-        cmd: udevadm control --reload-rules && udevadm trigger
-      when: udev_rule.changed
+      notify: Reload and trigger udev rules
