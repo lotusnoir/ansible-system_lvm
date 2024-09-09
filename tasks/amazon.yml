@@ -33,7 +33,7 @@
       ansible.builtin.get_url:
         url: "{{ ebsnvme_binary_helper_url }}"
         dest: "{{ ebsnvme_binary_helper_tmp }}/"
-        mode: 644
+        mode: '0644'
       changed_when: false
 
     - name: Amazon | extract binary helper
@@ -41,7 +41,7 @@
         src: "{{ ebsnvme_binary_helper_tmp }}/{{ ebsnvme_binary_helper_file }}"
         dest: "{{ ebsnvme_binary_helper_tmp }}/"
         remote_src: true
-        mode: 0755
+        mode: '0755'
       changed_when: false
 
     - name: Amazon | copy binary helper
@@ -61,6 +61,6 @@
       ansible.builtin.template:
         src: '70-ec2-nvme-devices.rules.j2'
         dest: '/etc/udev/rules.d/70-ec2-nvme-devices.rules'
-        mode: 0755
+        mode: '0755'
       register: udev_rule
       notify: Reload and trigger udev rules
