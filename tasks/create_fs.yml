@@ -29,6 +29,14 @@
     - not lv.create|bool
     - lv.filesystem != "swap"
 
+- name: Disable SWAP when resizing it
+  ansible.builtin.command: swapoff -a
+  changed_when: false
+  when:
+    - lv.create|bool
+    - lv.filesystem is defined
+    - lv.filesystem == "swap"
+
 - name: Create_fs | creating new filesystem on new LVM logical volume(s)
   community.general.filesystem:
     fstype: "{{ lv.filesystem }}"
@@ -46,6 +54,22 @@
     - lv.filesystem != 'None'
     - lv.filesystem != 'swap'
     - lv.filesystem != 'xfs'
+
+- name: Mkswap with new space
+  ansible.builtin.command: "mkswap /dev/mapper/{{ vg.vg_name }}-swap"
+  changed_when: false
+  when:
+    - lv.create|bool
+    - lv.filesystem is defined
+    - lv.filesystem == "swap"
+
+- name: Enable SWAP when resizing it
+  ansible.builtin.command: swapon -a
+  changed_when: false
+  when:
+    - lv.create|bool
+    - lv.filesystem is defined
+    - lv.filesystem == "swap"
 
 - name: Create_fs | creating new xfs filesystem on new LVM logical volume(s)
   community.general.filesystem:
