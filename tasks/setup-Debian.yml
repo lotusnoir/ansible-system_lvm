@@ -8,20 +8,20 @@
       - parted
     update_cache: true
     state: present
-  register: pkg_result
+  register: __pkg_result
   retries: 12
   delay: 10
-  until: pkg_result is success
+  until: __pkg_result is success
 
 - name: DEBIAN | install xfs tools
   ansible.builtin.package:
     name: xfsprogs
     state: present
   become: true
-  register: pkg_result
+  register: __pkg_result
   retries: 12
   delay: 10
-  until: pkg_result is success
+  until: __pkg_result is success
   loop: "{{ lvm_groups | subelements('lvnames') }}"
   when:
     - item.1 is defined

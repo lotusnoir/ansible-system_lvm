@@ -5,20 +5,20 @@
       - lvm2
       - sg3_utils
     state: present
-  register: pkg_result
+  register: __pkg_result
   retries: 12
   delay: 10
-  until: pkg_result is success
+  until: __pkg_result is success
 
 - name: Centos | install xfs tools
   ansible.builtin.package:
     name: "xfsprogs"
     state: "present"
   become: true
-  register: pkg_result
+  register: __pkg_result
   retries: 12
   delay: 10
-  until: pkg_result is success
+  until: __pkg_result is success
   loop: "{{ lookup('subelements', lvm_groups, 'lvnames', {'skip_missing': True}, wantlist=True) }}"
   loop_control:
     loop_var: lv
