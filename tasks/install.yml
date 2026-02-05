@@ -3,9 +3,9 @@
   ansible.builtin.set_fact:
     rescan_scsi_command: "/sbin/rescan-scsi-bus"
   when:
-    - ansible_distribution | replace(' ','') | lower == 'debian'
+    - ansible_facts.distribution | replace(' ','') | lower == 'debian'
     - ansible_distribution_release not in ('bookworm', 'sid')
-    - ansible_distribution_major_version is version(10, '<=')
+    - ansible_facts.distribution_major_version is version(10, '<=')
 
 - name: Ensure rescan exist
   ansible.builtin.stat:
@@ -26,11 +26,11 @@
 
 - name: Debian tasks
   ansible.builtin.include_tasks: debian.yml
-  when: ansible_os_family == "Debian"
+  when: ansible_facts.os_family == "Debian"
 
 - name: Redhat tasks
   ansible.builtin.include_tasks: centos.yml
-  when: ansible_os_family == "RedHat"
+  when: ansible_facts.os_family == "RedHat"
 
 - name: Manage tasks
   ansible.builtin.include_tasks: manage_lvm.yml
